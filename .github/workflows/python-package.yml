@@ -1,40 +1,45 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python package
+name: Gemini AI Code Reviewer
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
 
 jobs:
-  build:
-
+  gemini-code-review:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/gemini-review')
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        pytest
+      - name: Display PR Info
+        run: |
+          echo "Triggered by Comment: ${{ github.event.comment.body }}"
+          echo "PR Number: ${{ github.event.issue.number }}"
+          echo "Repo: ${{ github.repository }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch PR Details
+        id: pr-details
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr_json=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }})
+          echo "head_sha=$(echo $pr_json | jq -r .head.sha)" >> $GITHUB_OUTPUT
+          echo "base_sha=$(echo $pr_json | jq -r .base.sha)" >> $GITHUB_OUTPUT
+
+      - name: Gemini AI Code Review
+        uses: truongnh1992/gemini-ai-code-reviewer@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-1.5-pro-002
+          INPUT_EXCLUDE: "*.md,*.txt,package-lock.json,*.yml,*.yaml"
