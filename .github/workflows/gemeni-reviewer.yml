@@ -33,7 +33,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: paragonsean/gemini-ai-code-reviewer@main
+      - uses: paragonsean/gemini-ai-code-reviewer@master
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
