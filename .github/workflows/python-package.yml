@@ -37,7 +37,7 @@ jobs:
           echo "base_sha=$(echo $pr_json | jq -r .base.sha)" >> $GITHUB_OUTPUT
 
       - name: Gemini AI Code Review
-        uses: truongnh1992/gemini-ai-code-reviewer@main
+        uses: paragonsean/gemini-ai-code-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
